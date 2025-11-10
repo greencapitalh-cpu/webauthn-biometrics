@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import crypto from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
 import { generateChallenge, publicKeyOptions } from "./utils/webauthn.js";
