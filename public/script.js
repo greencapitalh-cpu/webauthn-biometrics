@@ -1,7 +1,6 @@
 const output = document.getElementById("output");
 const log = (msg) => (output.textContent = JSON.stringify(msg, null, 2));
 
-// --- Helper Base64URL → Uint8Array ---
 function base64urlToUint8Array(base64urlString) {
   const padding = '='.repeat((4 - (base64urlString.length % 4)) % 4);
   const base64 = (base64urlString + padding)
@@ -18,10 +17,7 @@ function base64urlToUint8Array(base64urlString) {
 // --- ENROLL ---
 document.getElementById("enrollBtn").onclick = async () => {
   try {
-    const start = await fetch("/api/webauthn/enroll/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
+    const start = await fetch("/api/webauthn/enroll/start", { method: "POST" });
     const options = await start.json();
 
     options.challenge = base64urlToUint8Array(options.challenge);
@@ -35,6 +31,7 @@ document.getElementById("enrollBtn").onclick = async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
+
     const result = await finish.json();
     log(result);
   } catch (err) {
@@ -45,12 +42,8 @@ document.getElementById("enrollBtn").onclick = async () => {
 // --- VERIFY ---
 document.getElementById("verifyBtn").onclick = async () => {
   try {
-    const start = await fetch("/api/webauthn/verify/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
+    const start = await fetch("/api/webauthn/verify/start", { method: "POST" });
     const options = await start.json();
-
     options.challenge = base64urlToUint8Array(options.challenge);
 
     const cred = await navigator.credentials.get({ publicKey: options });
@@ -61,6 +54,7 @@ document.getElementById("verifyBtn").onclick = async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
+
     const result = await finish.json();
     log(result);
   } catch (err) {
