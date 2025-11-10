@@ -2,15 +2,20 @@ import { randomBase64 } from "./crypto.js";
 
 export const generateChallenge = () => randomBase64(32);
 
-export const publicKeyOptions = (challenge) => ({
+export const publicKeyOptions = (challenge, userId, userName) => ({
   challenge,
-  rp: { name: "Render WebAuthn Demo" },
+  rp: { name: "BioID WebAuthn", id: "webauthn-biometrics.onrender.com" },
   user: {
-    id: randomBase64(16),
-    name: "anonymous",
-    displayName: "Anonymous User",
+    id: Buffer.from(userId).toString("base64url"),
+    name: userName || "anonymous",
+    displayName: userName || "Anonymous User"
   },
   pubKeyCredParams: [{ type: "public-key", alg: -7 }],
   timeout: 60000,
-  attestation: "direct",
+  authenticatorSelection: {
+    authenticatorAttachment: "platform", // 🔹 Forzar Face ID / Touch ID local
+    residentKey: "preferred",
+    userVerification: "required"
+  },
+  attestation: "none"
 });
