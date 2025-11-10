@@ -1,65 +1,58 @@
 import express from "express";
-import crypto from "crypto";
+import { generateChallenge, publicKeyOptions } from "../utils/webauthn.js";
+import { sha256Hex } from "../utils/crypto.js";
+import { getCredentials } from "../db/mongo.js";
 
 const router = express.Router();
 
-// 🧠 Guardado temporal en memoria (se reinicia en cada deploy)
-const userCredentials = new Map();
-
-// 🔸 Genera un challenge aleatorio
-const generateChallenge = (length = 32) =>
-  crypto.randomBytes(length).toString("base64url");
-
-// --- Registro de credencial ---
+// --- ENROLL START ---
 router.post("/enroll/start", (req, res) => {
+  const { userId = "anonymous", userName = "User" } = req.body;
   const challenge = generateChallenge();
-  const rp = {
-    name: "BioID WebAuthn",
-    id: "webauthn-biometrics.onrender.com"
-  };
-
-  res.json({
-    challenge,
-    rp,
-    user: {
-      id: crypto.randomBytes(16).toString("base64url"),
-      name: "test-user",
-      displayName: "Test User"
-    }
-  });
+  const options = publicKeyOptions(challenge, userId, userName);
+  res.json(options);
 });
 
-router.post("/enroll/finish", (req, res) => {
+// --- ENROLL FINISH ---
+router.post("/enroll/finish", async (req, res) => {
   try {
-    const { id } = req.body;
-    if (!id) return res.status(400).json({ error: "Missing credential id" });
+    const { id, userId = "anonymous" } = req.body;
+    if (!id) return res.status(400).json({ ok: false, error: "Missing credential ID" });
 
-    const hash = crypto.createHash("sha256").update(id).digest("hex");
-    userCredentials.set(id, { id, hash });
-    console.log("✅ Credential stored:", id);
+    const hash = sha256Hex(id);
+    const col = getCredentials();
+
+    await col.updateOne(
+      { userId },
+      { $set: { userId, credentialId: id, hash, updatedAt: new Date() } },
+      { upsert: true }
+    );
 
     res.json({ ok: true, hash });
   } catch (err) {
-    console.error("Enroll error:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 
-// --- Verificación de credencial ---
-router.post("/verify/start", (req, res) => {
+// --- VERIFY START ---
+router.post("/verify/start", (_, res) => {
   const challenge = generateChallenge();
   res.json({ challenge });
 });
 
-router.post("/verify/finish", (req, res) => {
-  const { id } = req.body;
-  if (!id) return res.status(400).json({ error: "Missing credential id" });
+// --- VERIFY FINISH ---
+router.post("/verify/finish", async (req, res) => {
+  try {
+    const { id, userId = "anonymous" } = req.body;
+    if (!id) return res.status(400).json({ ok: false, error: "Missing credential ID" });
 
-  const record = userCredentials.get(id);
-  if (!record)
-    return res.status(404).json({ error: "Credential not found" });
+    const record = await getCredentials().findOne({ userId, credentialId: id });
+    if (!record) return res.status(404).json({ ok: false, error: "Credential not found" });
 
-  res.json({ ok: true, hash: record.hash });
+    res.json({ ok: true, hash: record.hash });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
 export default router;
