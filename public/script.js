@@ -1,6 +1,20 @@
 const output = document.getElementById("output");
 const log = (msg) => (output.textContent = JSON.stringify(msg, null, 2));
 
+// --- Helper Base64URL → Uint8Array ---
+function base64urlToUint8Array(base64urlString) {
+  const padding = '='.repeat((4 - (base64urlString.length % 4)) % 4);
+  const base64 = (base64urlString + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
 // --- ENROLL ---
 document.getElementById("enrollBtn").onclick = async () => {
   try {
@@ -9,8 +23,9 @@ document.getElementById("enrollBtn").onclick = async () => {
       headers: { "Content-Type": "application/json" },
     });
     const options = await start.json();
-    options.challenge = Uint8Array.from(atob(options.challenge), c => c.charCodeAt(0));
-    options.user.id = Uint8Array.from(atob(options.user.id), c => c.charCodeAt(0));
+
+    options.challenge = base64urlToUint8Array(options.challenge);
+    options.user.id = base64urlToUint8Array(options.user.id);
 
     const cred = await navigator.credentials.create({ publicKey: options });
     const id = cred.id;
@@ -35,7 +50,8 @@ document.getElementById("verifyBtn").onclick = async () => {
       headers: { "Content-Type": "application/json" },
     });
     const options = await start.json();
-    options.challenge = Uint8Array.from(atob(options.challenge), c => c.charCodeAt(0));
+
+    options.challenge = base64urlToUint8Array(options.challenge);
 
     const cred = await navigator.credentials.get({ publicKey: options });
     const id = cred.id;
