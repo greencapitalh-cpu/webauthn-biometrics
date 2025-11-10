@@ -2,34 +2,37 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
+import dotenv from "dotenv";
+import { connectDB } from "./db/mongo.js";
 import webauthnRoutes from "./routes/webauthnRoutes.js";
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// 🔹 Middlewares base
 app.use(cors());
 app.use(express.json());
 
-// 🔹 API Routes
+// 🔹 Conexión a MongoDB
+connectDB();
+
+// 🔹 API
 app.use("/api/webauthn", webauthnRoutes);
 
-// 🔹 Healthcheck simple
-app.get("/healthz", (req, res) => res.json({ ok: true }));
+// 🔹 Healthcheck
+app.get("/healthz", (_, res) => res.json({ ok: true }));
 
-// 🔹 Servir frontend
+// 🔹 Frontend
 app.use(express.static(path.join(__dirname, "public")));
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/index.html"));
-});
+app.get("/", (_, res) =>
+  res.sendFile(path.join(__dirname, "public/index.html"))
+);
 
-// 🔹 Manejar rutas inexistentes → siempre JSON
-app.use((req, res) => {
-  res.status(404).json({ error: "Not Found" });
-});
+// 🔹 Rutas no encontradas → JSON puro
+app.use((_, res) => res.status(404).json({ error: "Not Found" }));
 
-// 🔹 Iniciar servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
