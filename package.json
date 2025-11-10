@@ -9,7 +9,8 @@
   "dependencies": {
     "express": "^4.19.2",
     "cors": "^2.8.5",
-    "base64url": "^3.0.1"
+    "base64url": "^3.0.1",
+    "mongodb": "^6.8.0"
   },
   "type": "module"
 }
