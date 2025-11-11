@@ -1,21 +1,31 @@
 services:
   - type: web
-    name: bioid-udochain
+    name: validate-udochain
     env: node
     plan: free
     autoDeploy: true
 
     buildCommand: |
-      echo "🚀 Building BioID (WebAuthn Biometric Server)..."
+      echo "🚀 Building Validate (Fullstack App)..."
       npm install
+      cd frontend && npm install && npm run build
 
     startCommand: node server.js
 
-    healthCheckPath: /healthz
+    healthCheckPath: /api/healthz
+
     envVars:
       - key: NODE_ENV
         value: production
-      - key: MONGODB_URI
-        sync: false
+
       - key: PORT
-        value: 3000
+        value: 8080
+
+      - key: MONGO_URI
+        sync: false
+
+      - key: BIOID_URL
+        value: "https://bioid.udochain.com"
+
+      - key: CORS_ORIGINS
+        value: "https://validate.udochain.com,https://bioid.udochain.com,https://app.udochain.com,https://wapp.udochain.com"
