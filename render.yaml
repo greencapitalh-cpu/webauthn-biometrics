@@ -1,31 +1,19 @@
 services:
   - type: web
-    name: validate-udochain
+    name: bioid-udochain
     env: node
     plan: free
     autoDeploy: true
 
-    buildCommand: |
-      echo "🚀 Building Validate (Fullstack App)..."
-      npm install
-      cd frontend && npm install && npm run build
-
+    buildCommand: npm install
     startCommand: node server.js
 
-    healthCheckPath: /api/healthz
+    healthCheckPath: /healthz
 
     envVars:
       - key: NODE_ENV
         value: production
-
       - key: PORT
-        value: 8080
-
-      - key: MONGO_URI
+        value: 3000
+      - key: MONGODB_URI
         sync: false
-
-      - key: BIOID_URL
-        value: "https://bioid.udochain.com"
-
-      - key: CORS_ORIGINS
-        value: "https://validate.udochain.com,https://bioid.udochain.com,https://app.udochain.com,https://wapp.udochain.com"
