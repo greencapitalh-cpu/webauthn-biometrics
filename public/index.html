@@ -3,90 +3,161 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>UDoChain BioID Authentication</title>
+    <title>UDoChain BioID</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background-color: #f5f6fa;
+        color: #333;
+      }
+      h1 {
+        color: #0072ff;
+      }
+      button {
+        background-color: #0072ff;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 16px;
+      }
+      button:hover {
+        background-color: #005fd1;
+      }
+      #log {
+        margin-top: 20px;
+        padding: 15px;
+        width: 90%;
+        max-width: 480px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        text-align: left;
+        font-family: monospace;
+        font-size: 14px;
+        white-space: pre-wrap;
+      }
+    </style>
   </head>
-  <body
-    style="
-      font-family: sans-serif;
-      padding: 40px;
-      background-color: #f5f7fb;
-      color: #222;
-    "
-  >
-    <h1>🔐 UDoChain BioID</h1>
-    <p>Autenticación biométrica con WebAuthn (Touch ID / Face ID / FIDO2)</p>
 
-    <input
-      type="text"
-      id="userId"
-      placeholder="User ID (ej: claudio1)"
-      value="claudio1"
-    />
-    <br /><br />
+  <body>
+    <h1>🧬 UDoChain BioID</h1>
+    <p>Valida tu identidad biométrica antes de certificar tu documento.</p>
 
-    <button onclick="register()">🧬 Registrar biometría</button>
-    <button onclick="verify()">✅ Verificar identidad</button>
+    <button id="btnEnroll">Registrar identidad</button>
+    <button id="btnVerify">Validar identidad</button>
 
-    <pre id="output" style="margin-top:20px;background:#eee;padding:10px;"></pre>
+    <div id="log">Esperando acción del usuario...</div>
 
     <script>
-      async function register() {
-        const userId = document.getElementById("userId").value.trim();
-        const out = document.getElementById("output");
-        out.textContent = "Registrando...";
+      const log = (msg) => {
+        const el = document.getElementById("log");
+        el.textContent += `\n${msg}`;
+      };
 
-        // Paso 1: obtener opciones
-        const resStart = await fetch("/api/webauthn/enroll/start", {
+      const apiBase = "https://bioid.udochain.com/api/webauthn";
+
+      // --- REGISTRO (solo la primera vez) ---
+      async function enroll() {
+        log("📲 Iniciando registro biométrico...");
+
+        const start = await fetch(`${apiBase}/enroll/start`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId }),
-        });
-        const data = await resStart.json();
+          body: JSON.stringify({ userId: "anonymous", userName: "Usuario BioID" }),
+        }).then((r) => r.json());
 
-        // Paso 2: crear credencial biométrica real
-        const attResp = await navigator.credentials.create({
-          publicKey: data.options,
-        });
+        if (!start.ok) {
+          log("❌ Error al iniciar registro");
+          return;
+        }
 
-        // Paso 3: enviar al servidor
-        const resFinish = await fetch("/api/webauthn/enroll/finish", {
+        const options = start.options;
+        options.challenge = Uint8Array.from(atob(options.challenge), (c) => c.charCodeAt(0));
+        options.user.id = Uint8Array.from(options.user.id.data || [1, 2, 3]);
+
+        const credential = await navigator.credentials.create({ publicKey: options });
+        const attResp = {
+          id: credential.id,
+          rawId: btoa(String.fromCharCode(...new Uint8Array(credential.rawId))),
+          type: credential.type,
+          response: {
+            attestationObject: btoa(String.fromCharCode(...new Uint8Array(credential.response.attestationObject))),
+            clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(credential.response.clientDataJSON))),
+          },
+        };
+
+        const finish = await fetch(`${apiBase}/enroll/finish`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId, attResp }),
-        });
+          body: JSON.stringify({ userId: "anonymous", attResp }),
+        }).then((r) => r.json());
 
-        const done = await resFinish.json();
-        out.textContent = JSON.stringify(done, null, 2);
+        if (finish.ok) log("✅ Registro biométrico completado correctamente");
+        else log(`❌ Error en registro: ${finish.error}`);
       }
 
+      // --- VERIFICACIÓN (flujo de validación real) ---
       async function verify() {
-        const userId = document.getElementById("userId").value.trim();
-        const out = document.getElementById("output");
-        out.textContent = "Verificando...";
+        log("🔐 Iniciando verificación biométrica...");
 
-        // Paso 1: challenge de verificación
-        const resStart = await fetch("/api/webauthn/verify/start", {
+        const start = await fetch(`${apiBase}/verify/start`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId }),
-        });
-        const data = await resStart.json();
+          body: JSON.stringify({ userId: "anonymous" }),
+        }).then((r) => r.json());
 
-        // Paso 2: solicitar autenticación real al dispositivo
-        const authResp = await navigator.credentials.get({
-          publicKey: data.options,
-        });
+        if (!start.ok) {
+          log("❌ Error al iniciar verificación");
+          return;
+        }
 
-        // Paso 3: enviar autenticación al servidor
-        const resFinish = await fetch("/api/webauthn/verify/finish", {
+        const options = start.options;
+        options.challenge = Uint8Array.from(atob(options.challenge), (c) => c.charCodeAt(0));
+
+        const credential = await navigator.credentials.get({ publicKey: options });
+
+        const authResp = {
+          id: credential.id,
+          rawId: btoa(String.fromCharCode(...new Uint8Array(credential.rawId))),
+          type: credential.type,
+          response: {
+            authenticatorData: btoa(String.fromCharCode(...new Uint8Array(credential.response.authenticatorData))),
+            clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(credential.response.clientDataJSON))),
+            signature: btoa(String.fromCharCode(...new Uint8Array(credential.response.signature))),
+            userHandle: credential.response.userHandle
+              ? btoa(String.fromCharCode(...new Uint8Array(credential.response.userHandle)))
+              : null,
+          },
+        };
+
+        const finish = await fetch(`${apiBase}/verify/finish`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId, authResp }),
-        });
+          body: JSON.stringify({ userId: "anonymous", authResp }),
+        }).then((r) => r.json());
 
-        const done = await resFinish.json();
-        out.textContent = JSON.stringify(done, null, 2);
+        if (finish.ok) {
+          log(`✅ Identidad verificada con hash: ${finish.hash}`);
+
+          // --- Enviar hash a Validate (frontend de validate.udochain.com) ---
+          const redirectUrl = `https://validate.udochain.com/?bioidHash=${finish.hash}`;
+          log(`➡️ Redirigiendo a: ${redirectUrl}`);
+          window.location.href = redirectUrl;
+        } else {
+          log(`❌ Error en verificación: ${finish.error}`);
+        }
       }
+
+      document.getElementById("btnEnroll").addEventListener("click", enroll);
+      document.getElementById("btnVerify").addEventListener("click", verify);
     </script>
   </body>
 </html>
