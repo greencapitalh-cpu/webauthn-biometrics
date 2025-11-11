@@ -1,17 +1,92 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🔐 WebAuthn Biometric Authentication</title>
-</head>
-<body style="font-family: sans-serif; text-align: center; margin-top: 40px;">
-  <h1>🔐 WebAuthn Biometric Authentication</h1>
-  <input id="userId" placeholder="User ID" /><br><br>
-  <input id="userName" placeholder="User name" /><br><br>
-  <button id="enrollBtn">Enroll Biometric</button>
-  <button id="verifyBtn">Verify Identity</button>
-  <pre id="output"></pre>
-  <script src="script.js"></script>
-</body>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UDoChain BioID Authentication</title>
+  </head>
+  <body
+    style="
+      font-family: sans-serif;
+      padding: 40px;
+      background-color: #f5f7fb;
+      color: #222;
+    "
+  >
+    <h1>🔐 UDoChain BioID</h1>
+    <p>Autenticación biométrica con WebAuthn (Touch ID / Face ID / FIDO2)</p>
+
+    <input
+      type="text"
+      id="userId"
+      placeholder="User ID (ej: claudio1)"
+      value="claudio1"
+    />
+    <br /><br />
+
+    <button onclick="register()">🧬 Registrar biometría</button>
+    <button onclick="verify()">✅ Verificar identidad</button>
+
+    <pre id="output" style="margin-top:20px;background:#eee;padding:10px;"></pre>
+
+    <script>
+      async function register() {
+        const userId = document.getElementById("userId").value.trim();
+        const out = document.getElementById("output");
+        out.textContent = "Registrando...";
+
+        // Paso 1: obtener opciones
+        const resStart = await fetch("/api/webauthn/enroll/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId }),
+        });
+        const data = await resStart.json();
+
+        // Paso 2: crear credencial biométrica real
+        const attResp = await navigator.credentials.create({
+          publicKey: data.options,
+        });
+
+        // Paso 3: enviar al servidor
+        const resFinish = await fetch("/api/webauthn/enroll/finish", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, attResp }),
+        });
+
+        const done = await resFinish.json();
+        out.textContent = JSON.stringify(done, null, 2);
+      }
+
+      async function verify() {
+        const userId = document.getElementById("userId").value.trim();
+        const out = document.getElementById("output");
+        out.textContent = "Verificando...";
+
+        // Paso 1: challenge de verificación
+        const resStart = await fetch("/api/webauthn/verify/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId }),
+        });
+        const data = await resStart.json();
+
+        // Paso 2: solicitar autenticación real al dispositivo
+        const authResp = await navigator.credentials.get({
+          publicKey: data.options,
+        });
+
+        // Paso 3: enviar autenticación al servidor
+        const resFinish = await fetch("/api/webauthn/verify/finish", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, authResp }),
+        });
+
+        const done = await resFinish.json();
+        out.textContent = JSON.stringify(done, null, 2);
+      }
+    </script>
+  </body>
 </html>
