@@ -1,3 +1,6 @@
+// 🧬 MÓDULO: webauthn-biometrics
+// 📄 Archivo: routes/webauthnRoutes.js
+
 import express from "express";
 import base64url from "base64url";
 import {
@@ -9,33 +12,29 @@ import {
 import { getCredentials } from "../db/mongo.js";
 
 const router = express.Router();
-
-const rpName = "UDoChain BioID";
 const rpID = "bioid.udochain.com";
 const origin = `https://${rpID}`;
+const rpName = "UDoChain BioID";
 
 /**
- * 🧬 Registro biométrico — Paso 1 (Generar opciones)
+ * 🧬 Registro biométrico — Paso 1
  */
 router.post("/enroll/start", async (req, res) => {
   const { userId = "anonymous", userName = "User" } = req.body;
+  const col = getCredentials();
+
   const options = generateRegistrationOptions({
     rpName,
     rpID,
     userID: userId,
     userName,
     attestationType: "none",
-    authenticatorSelection: {
-      userVerification: "preferred",
-      residentKey: "preferred",
-    },
+    authenticatorSelection: { userVerification: "preferred" },
   });
 
-  // Guarda el challenge temporalmente (en Mongo o memoria)
-  const col = getCredentials();
   await col.updateOne(
     { userId },
-    { $set: { userId, currentChallenge: options.challenge } },
+    { $set: { currentChallenge: options.challenge } },
     { upsert: true }
   );
 
@@ -43,7 +42,7 @@ router.post("/enroll/start", async (req, res) => {
 });
 
 /**
- * 🧬 Registro biométrico — Paso 2 (Validar respuesta del navegador)
+ * 🧬 Registro biométrico — Paso 2
  */
 router.post("/enroll/finish", async (req, res) => {
   const { userId, attResp } = req.body;
@@ -75,7 +74,7 @@ router.post("/enroll/finish", async (req, res) => {
       }
     );
 
-    console.log(`✅ [Enroll] ${userId} registrado correctamente`);
+    console.log(`✅ [Enroll] ${userId} registrado`);
     res.json({ ok: true });
   } catch (err) {
     console.error("❌ Error en enroll/finish:", err);
@@ -84,14 +83,14 @@ router.post("/enroll/finish", async (req, res) => {
 });
 
 /**
- * 🔐 Verificación biométrica — Paso 1 (Generar challenge)
+ * 🔐 Verificación biométrica — Paso 1
  */
 router.post("/verify/start", async (req, res) => {
   const { userId } = req.body;
   const col = getCredentials();
   const user = await col.findOne({ userId });
 
-  if (!user || !user.credentialID)
+  if (!user?.credentialID)
     return res.status(404).json({ ok: false, error: "User not registered" });
 
   const options = generateAuthenticationOptions({
@@ -99,16 +98,13 @@ router.post("/verify/start", async (req, res) => {
     userVerification: "preferred",
   });
 
-  await col.updateOne(
-    { userId },
-    { $set: { currentChallenge: options.challenge } }
-  );
+  await col.updateOne({ userId }, { $set: { currentChallenge: options.challenge } });
 
   res.json({ ok: true, options });
 });
 
 /**
- * 🔐 Verificación biométrica — Paso 2 (Validar autenticación real)
+ * 🔐 Verificación biométrica — Paso 2
  */
 router.post("/verify/finish", async (req, res) => {
   const { userId, authResp } = req.body;
@@ -134,7 +130,6 @@ router.post("/verify/finish", async (req, res) => {
     if (!verification.verified)
       return res.status(400).json({ ok: false, error: "Verification failed" });
 
-    // Actualizar contador y devolver hash biométrico
     await col.updateOne(
       { userId },
       { $set: { counter: verification.authenticationInfo.newCounter } }
@@ -144,17 +139,12 @@ router.post("/verify/finish", async (req, res) => {
       Buffer.from(verification.authenticationInfo.newCounter.toString())
     );
 
-    console.log(`✅ [Verify] ${userId} autenticado con hash ${hash}`);
-    res.json({ ok: true, hash });
+    console.log(`✅ [Verify] ${userId} autenticado`);
+    res.redirect(`https://validate.udochain.com?bioidHash=${hash}`);
   } catch (err) {
-    console.error("❌ Error en verify/finish:", err);
+    console.error("❌ Error verify/finish:", err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });
-
-/**
- * 💚 Healthcheck
- */
-router.get("/healthz", (_, res) => res.json({ ok: true }));
 
 export default router;
