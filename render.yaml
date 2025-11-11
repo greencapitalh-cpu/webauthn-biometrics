@@ -1,19 +1,11 @@
 services:
   - type: web
-    name: bioid-udochain
+    name: webauthn-biometrics
     env: node
     plan: free
     autoDeploy: true
-
-    buildCommand: npm install
-    startCommand: node server.js
-
-    healthCheckPath: /healthz
-
+    buildCommand: "npm install"
+    startCommand: "node server.js"
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 3000
       - key: MONGODB_URI
         sync: false
