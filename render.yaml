@@ -1,11 +1,21 @@
 services:
   - type: web
-    name: webauthn-biometrics
+    name: bioid-udochain
     env: node
-    buildCommand: "npm install"
-    startCommand: "node server.js"
     plan: free
     autoDeploy: true
+
+    buildCommand: |
+      echo "🚀 Building BioID (WebAuthn Biometric Server)..."
+      npm install
+
+    startCommand: node server.js
+
+    healthCheckPath: /healthz
     envVars:
+      - key: NODE_ENV
+        value: production
       - key: MONGODB_URI
         sync: false
+      - key: PORT
+        value: 3000
