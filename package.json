@@ -1,17 +1,22 @@
 {
-  "name": "webauthn-biometrics",
-  "version": "2.0.0",
-  "description": "WebAuthn Biometrics (MongoDB + Render)",
+  "name": "bioid-udochain",
+  "version": "2.1.0",
+  "description": "UDoChain BioID WebAuthn Biometric Authentication Server",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
   "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "build": "echo 'Build step not required for BioID module'"
+  },
+  "engines": {
+    "node": ">=20.x"
+  },
   "dependencies": {
+    "@simplewebauthn/server": "^10.0.0",
     "base64url": "^3.0.1",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
+    "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "mongodb": "^6.8.0"
+    "mongoose": "^7.6.0"
   }
 }
