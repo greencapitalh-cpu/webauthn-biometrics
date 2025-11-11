@@ -12,7 +12,7 @@ export const publicKeyOptions = (challenge, userId, userName) => ({
   challenge,
   rp: {
     name: "UDoChain BioID",
-    id: "udochain.com", // ✅ permite subdominios: bioid, app, validate...
+    id: "bioid.udochain.com", // ✅ dominio fijo del módulo
   },
   user: {
     id: Buffer.from(userId).toString("base64url"),
@@ -25,7 +25,7 @@ export const publicKeyOptions = (challenge, userId, userName) => ({
   ],
   timeout: 60000,
   authenticatorSelection: {
-    authenticatorAttachment: "platform",
+    authenticatorAttachment: "platform", // Usa FaceID, TouchID, PIN del dispositivo
     residentKey: "preferred",
     userVerification: "required"
   },
