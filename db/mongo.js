@@ -1,3 +1,6 @@
+// 🧬 MÓDULO: webauthn-biometrics
+// 📄 Archivo: db/mongo.js
+
 import { MongoClient } from "mongodb";
 
 let db, credentials;
@@ -8,9 +11,9 @@ export async function connectDB() {
     await client.connect();
     db = client.db("webauthn");
     credentials = db.collection("credentials");
-    console.log("✅ Connected to MongoDB");
+    console.log("✅ MongoDB conectado (BioID)");
   } catch (err) {
-    console.error("❌ MongoDB connection error:", err.message);
+    console.error("❌ Error MongoDB:", err.message);
   }
 }
 
