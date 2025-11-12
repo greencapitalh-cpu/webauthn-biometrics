@@ -2,10 +2,10 @@ const output = document.getElementById("output");
 const log = (msg) => (output.textContent = JSON.stringify(msg, null, 2));
 
 function base64urlToUint8Array(base64urlString) {
-  const padding = '='.repeat((4 - (base64urlString.length % 4)) % 4);
+  const padding = "=".repeat((4 - (base64urlString.length % 4)) % 4);
   const base64 = (base64urlString + padding)
-    .replace(/-/g, '+')
-    .replace(/_/g, '/');
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
   const rawData = atob(base64);
   const outputArray = new Uint8Array(rawData.length);
   for (let i = 0; i < rawData.length; ++i) {
@@ -14,6 +14,7 @@ function base64urlToUint8Array(base64urlString) {
   return outputArray;
 }
 
+// --- ENROLL ---
 document.getElementById("enrollBtn").onclick = async () => {
   try {
     const userId = document.getElementById("userId").value || "anon";
@@ -22,10 +23,9 @@ document.getElementById("enrollBtn").onclick = async () => {
     const start = await fetch("/api/webauthn/enroll/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, userName })
+      body: JSON.stringify({ userId, userName }),
     });
     const options = await start.json();
-
     options.challenge = base64urlToUint8Array(options.challenge);
     options.user.id = base64urlToUint8Array(options.user.id);
 
@@ -35,24 +35,29 @@ document.getElementById("enrollBtn").onclick = async () => {
     const finish = await fetch("/api/webauthn/enroll/finish", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, userId })
+      body: JSON.stringify({ id, userId }),
     });
     const result = await finish.json();
     log(result);
+
+    if (result.ok) {
+      output.textContent += "\n✅ Biometría registrada correctamente.";
+    }
   } catch (err) {
     log({ error: err.message });
   }
 };
 
+// --- VERIFY ---
 document.getElementById("verifyBtn").onclick = async () => {
   try {
     const userId = document.getElementById("userId").value || "anon";
+
     const start = await fetch("/api/webauthn/verify/start", {
       method: "POST",
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
     });
     const options = await start.json();
-
     options.challenge = base64urlToUint8Array(options.challenge);
 
     const cred = await navigator.credentials.get({ publicKey: options });
@@ -61,10 +66,30 @@ document.getElementById("verifyBtn").onclick = async () => {
     const finish = await fetch("/api/webauthn/verify/finish", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, userId })
+      body: JSON.stringify({ id, userId }),
     });
     const result = await finish.json();
     log(result);
+
+    // ✅ NUEVO BLOQUE DE INTEGRACIÓN CON VALIDATE
+    if (result.ok && result.hash) {
+      // Generar redirección a Validate
+      const bioidHash = result.hash;
+      const params = new URLSearchParams(window.location.search);
+      const file = params.get("file") || localStorage.getItem("pendingFile") || "desconocido";
+      const hash = params.get("hash") || localStorage.getItem("pendingHash") || "nohash";
+
+      // Guardar en localStorage por compatibilidad
+      localStorage.setItem("lastBioIDHash", bioidHash);
+
+      // Redirigir automáticamente a Validate
+      const validateUrl = `https://validate.udochain.com/?bioidHash=${encodeURIComponent(
+        bioidHash
+      )}&file=${encodeURIComponent(file)}&hash=${encodeURIComponent(hash)}`;
+
+      output.textContent += `\n🔁 Redirigiendo a Validate...`;
+      setTimeout(() => (window.location.href = validateUrl), 1000);
+    }
   } catch (err) {
     log({ error: err.message });
   }
