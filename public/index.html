@@ -1,115 +1,17 @@
 <!DOCTYPE html>
-<html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>UDoChain BioID</title>
-  </head>
-  <body>
-    <h1>🧬 UDoChain BioID</h1>
-    <p>Valida tu identidad biométrica antes de certificar tu documento.</p>
-    <button id="btnEnroll">Registrar identidad</button>
-    <button id="btnVerify">Verificar identidad</button>
-    <pre id="log"></pre>
-
-    <script>
-      const api = "https://bioid.udochain.com/api/webauthn";
-      const log = (msg) =>
-        (document.getElementById("log").textContent += `\n${msg}`);
-
-      const getRedirect = () => {
-        const params = new URLSearchParams(window.location.search);
-        return params.get("redirect") || "https://validate.udochain.com";
-      };
-
-      async function enroll() {
-        log("🧾 Iniciando registro...");
-        const start = await fetch(`${api}/enroll/start`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: "anonymous", userName: "Usuario" }),
-        }).then((r) => r.json());
-
-        const credential = await navigator.credentials.create({
-          publicKey: start.options,
-        });
-
-        const attResp = {
-          id: credential.id,
-          rawId: btoa(
-            String.fromCharCode(...new Uint8Array(credential.rawId))
-          ),
-          type: credential.type,
-          response: {
-            attestationObject: btoa(
-              String.fromCharCode(
-                ...new Uint8Array(credential.response.attestationObject)
-              )
-            ),
-            clientDataJSON: btoa(
-              String.fromCharCode(
-                ...new Uint8Array(credential.response.clientDataJSON)
-              )
-            ),
-          },
-        };
-
-        const finish = await fetch(`${api}/enroll/finish`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: "anonymous", attResp }),
-        }).then((r) => r.json());
-
-        log(finish.ok ? "✅ Registro completo" : "❌ Error en registro");
-      }
-
-      async function verify() {
-        log("🔐 Verificando identidad...");
-        const redirect = getRedirect();
-
-        const start = await fetch(`${api}/verify/start`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: "anonymous" }),
-        }).then((r) => r.json());
-
-        const credential = await navigator.credentials.get({
-          publicKey: start.options,
-        });
-
-        const authResp = {
-          id: credential.id,
-          rawId: btoa(
-            String.fromCharCode(...new Uint8Array(credential.rawId))
-          ),
-          type: credential.type,
-          response: {
-            authenticatorData: btoa(
-              String.fromCharCode(
-                ...new Uint8Array(credential.response.authenticatorData)
-              )
-            ),
-            clientDataJSON: btoa(
-              String.fromCharCode(
-                ...new Uint8Array(credential.response.clientDataJSON)
-              )
-            ),
-            signature: btoa(
-              String.fromCharCode(...new Uint8Array(credential.response.signature))
-            ),
-          },
-        };
-
-        // ✅ Enviar redirect dinámico al finalizar
-        await fetch(`${api}/verify/finish`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: "anonymous", authResp, redirect }),
-        });
-      }
-
-      document.getElementById("btnEnroll").onclick = enroll;
-      document.getElementById("btnVerify").onclick = verify;
-    </script>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🔐 WebAuthn Biometric Authentication</title>
+</head>
+<body style="font-family: sans-serif; text-align: center; margin-top: 40px;">
+  <h1>🔐 WebAuthn Biometric Authentication</h1>
+  <input id="userId" placeholder="User ID" /><br><br>
+  <input id="userName" placeholder="User name" /><br><br>
+  <button id="enrollBtn">Enroll Biometric</button>
+  <button id="verifyBtn">Verify Identity</button>
+  <pre id="output"></pre>
+  <script src="script.js"></script>
+</body>
 </html>
