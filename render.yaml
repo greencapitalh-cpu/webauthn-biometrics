@@ -1,11 +1,27 @@
 services:
   - type: web
-    name: webauthn-biometrics
+    name: bioid-udochain
     env: node
-    buildCommand: "npm install"
-    startCommand: "node server.js"
     plan: free
     autoDeploy: true
+
+    buildCommand: |
+      echo "🚀 Building UDoChain BioID..."
+      npm install
+
+    startCommand: node server.js
+
+    healthCheckPath: /healthz
+
     envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: 3000
+
       - key: MONGODB_URI
         sync: false
+
+      - key: CORS_ORIGINS
+        value: "https://validate.udochain.com,https://bioid.udochain.com,https://app.udochain.com,https://wapp.udochain.com"
