@@ -1,6 +1,3 @@
-// 🧬 MÓDULO: webauthn-biometrics
-// 📄 Archivo: routes/webauthnRoutes.js
-
 import express from "express";
 import base64url from "base64url";
 import {
@@ -16,11 +13,9 @@ const rpID = "bioid.udochain.com";
 const origin = `https://${rpID}`;
 const rpName = "UDoChain BioID";
 
-/**
- * 🧬 Registro biométrico — Paso 1
- */
+/** 🧬 Registro biométrico — Paso 1 */
 router.post("/enroll/start", async (req, res) => {
-  const { userId = "anonymous", userName = "User" } = req.body;
+  const { userId = "anonymous", userName = "Usuario BioID" } = req.body;
   const col = getCredentials();
 
   const options = generateRegistrationOptions({
@@ -41,9 +36,7 @@ router.post("/enroll/start", async (req, res) => {
   res.json({ ok: true, options });
 });
 
-/**
- * 🧬 Registro biométrico — Paso 2
- */
+/** 🧬 Registro biométrico — Paso 2 */
 router.post("/enroll/finish", async (req, res) => {
   const { userId, attResp } = req.body;
   const col = getCredentials();
@@ -74,7 +67,7 @@ router.post("/enroll/finish", async (req, res) => {
       }
     );
 
-    console.log(`✅ [Enroll] ${userId} registrado`);
+    console.log(`✅ [Enroll] ${userId} registrado correctamente`);
     res.json({ ok: true });
   } catch (err) {
     console.error("❌ Error en enroll/finish:", err);
@@ -82,11 +75,9 @@ router.post("/enroll/finish", async (req, res) => {
   }
 });
 
-/**
- * 🔐 Verificación biométrica — Paso 1
- */
+/** 🔐 Verificación biométrica — Paso 1 */
 router.post("/verify/start", async (req, res) => {
-  const { userId } = req.body;
+  const { userId = "anonymous" } = req.body;
   const col = getCredentials();
   const user = await col.findOne({ userId });
 
@@ -98,14 +89,15 @@ router.post("/verify/start", async (req, res) => {
     userVerification: "preferred",
   });
 
-  await col.updateOne({ userId }, { $set: { currentChallenge: options.challenge } });
+  await col.updateOne(
+    { userId },
+    { $set: { currentChallenge: options.challenge } }
+  );
 
   res.json({ ok: true, options });
 });
 
-/**
- * 🔐 Verificación biométrica — Paso 2
- */
+/** 🔐 Verificación biométrica — Paso 2 */
 router.post("/verify/finish", async (req, res) => {
   const { userId, authResp } = req.body;
   const col = getCredentials();
@@ -139,8 +131,8 @@ router.post("/verify/finish", async (req, res) => {
       Buffer.from(verification.authenticationInfo.newCounter.toString())
     );
 
-    console.log(`✅ [Verify] ${userId} autenticado`);
-    res.redirect(`https://validate.udochain.com?bioidHash=${hash}`);
+    console.log(`✅ [Verify] ${userId} autenticado con hash ${hash}`);
+    res.json({ ok: true, hash });
   } catch (err) {
     console.error("❌ Error verify/finish:", err);
     res.status(500).json({ ok: false, error: err.message });
