@@ -70,19 +70,20 @@ document.getElementById("verifyBtn").onclick = async () => {
       const params = new URLSearchParams(window.location.search);
       const file = params.get("file") || localStorage.getItem("pendingFile") || "desconocido";
       const hash = params.get("hash") || localStorage.getItem("pendingHash") || "nohash";
-      const origin = params.get("from") || "validate"; // Detecta de dónde viene
+      const token = params.get("token") || localStorage.getItem("token");
+      const origin = params.get("from") || "validate";
 
       localStorage.setItem("lastBioIDHash", bioidHash);
 
       if (origin === "validate") {
-        // 🔁 Retorna a Validate para finalizar y generar PDF
         const validateUrl = `https://validate.udochain.com/?bioidHash=${encodeURIComponent(
           bioidHash
-        )}&file=${encodeURIComponent(file)}&hash=${encodeURIComponent(hash)}`;
+        )}&file=${encodeURIComponent(file)}&hash=${encodeURIComponent(hash)}${
+          token ? `&token=${encodeURIComponent(token)}` : ""
+        }`;
         output.textContent += `\n🔁 Redirigiendo a Validate...`;
         setTimeout(() => (window.location.href = validateUrl), 1000);
       } else {
-        // 🔁 Si no viene de Validate, va a App
         const appUrl = `https://app.udochain.com/?bioidHash=${encodeURIComponent(
           bioidHash
         )}`;
