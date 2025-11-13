@@ -15,7 +15,10 @@ router.post("/enroll/start", (req, res) => {
     const challenge = generateChallenge();
     challenges.set(userId, challenge);
 
-    const options = publicKeyOptions(challenge, userId, userName);
+    // ✅ Tomar host dinámico (funciona desde validate/app también)
+    const host = req.get("origin") || req.get("host") || "https://bioid.udochain.com";
+    const options = publicKeyOptions(challenge, userId, userName, host);
+
     return res.json(options);
   } catch (err) {
     console.error("❌ ENROLL START error:", err);
