@@ -7,16 +7,14 @@ export const generateChallenge = () => randomBase64(32);
 
 /**
  * Configuración pública del registro (enroll) de WebAuthn.
- * 🔧 Se ajusta dinámicamente al dominio real.
+ * 🔧 RP ID fijado a bioid.udochain.com (requisito de los navegadores).
  */
-export const publicKeyOptions = (challenge, userId, userName, host = "bioid.udochain.com") => {
-  const rpId = host.replace(/^https?:\/\//, "").split("/")[0]; // ✅ dinámico
-
+export const publicKeyOptions = (challenge, userId, userName) => {
   return {
     challenge,
     rp: {
       name: "UDoChain BioID",
-      id: rpId,
+      id: "bioid.udochain.com", // 🔒 Fijo — debe coincidir con el dominio real
     },
     user: {
       id: Buffer.from(userId).toString("base64url"),
@@ -24,12 +22,12 @@ export const publicKeyOptions = (challenge, userId, userName, host = "bioid.udoc
       displayName: userName || "Anonymous User",
     },
     pubKeyCredParams: [
-      { type: "public-key", alg: -7 },   // ES256 (ECDSA)
+      { type: "public-key", alg: -7 }, // ES256 (ECDSA)
       { type: "public-key", alg: -257 }, // RS256 (RSA)
     ],
     timeout: 60000,
     authenticatorSelection: {
-      authenticatorAttachment: "platform",  // FaceID, TouchID o PIN
+      authenticatorAttachment: "platform", // FaceID, TouchID o PIN
       residentKey: "preferred",
       userVerification: "required",
     },
