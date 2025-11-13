@@ -6,7 +6,6 @@ import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { connectDB } from "./db/mongo.js";
 import webauthnRoutes from "./routes/webauthnRoutes.js";
-import { requireAuth } from "./middleware/requireAuth.js";
 
 dotenv.config();
 
@@ -14,59 +13,46 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 
-// ✅ CORS: habilitar tus dominios oficiales y cabeceras WebAuthn
-const allowedOrigins = [
-  "https://bioid.udochain.com",
-  "https://validate.udochain.com",
-  "https://app.udochain.com",
-  "https://wapp.udochain.com",
-];
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
-  res.setHeader("Cross-Origin-Embedder-Policy", "unsafe-none");
-  res.setHeader("Vary", "Origin");
-  if (req.method === "OPTIONS") return res.sendStatus(200);
-  next();
-});
+// 🔹 CORS seguro: permite solo dominios de UDoChain
+app.use(cors({
+  origin: [
+    "https://bioid.udochain.com",
+    "https://app.udochain.com",
+    "https://validate.udochain.com"
+  ],
+  credentials: true
+}));
 
 app.use(express.json({ limit: "10mb" }));
 
 // 🔹 Conexión a MongoDB
 connectDB();
 
-// ✅ Asegurar carpeta public exista
+// ✅ Asegurar carpeta public exista (por si Render limpia el entorno)
 const publicDir = path.join(__dirname, "public");
 if (!fs.existsSync(publicDir)) {
   fs.mkdirSync(publicDir);
   console.log("📁 Carpeta /public creada automáticamente");
 }
 
-// 🔹 API principal (no protegida)
+// 🔹 API principal
 app.use("/api/webauthn", webauthnRoutes);
 
-// 🔹 Healthcheck
+// 🔹 Healthcheck para Render
 app.get("/healthz", (_, res) => res.json({ ok: true }));
 
-// ✅ Protección de frontend (solo usuarios autenticados)
-app.use(requireAuth);
+// ✅ Endpoint especial para WebAuthn (.well-known)
+app.get("/.well-known/webauthn", (_, res) => {
+  res.json({ rp_id: "bioid.udochain.com" });
+});
 
-// 🔹 Servir frontend solo si está autenticado
+// 🔹 Servir frontend estático
 app.use(express.static(publicDir));
 app.get("/", (_, res) => res.sendFile(path.join(publicDir, "index.html")));
 
-// 🔹 Rutas no encontradas
+// 🔹 Rutas no encontradas → JSON estándar
 app.use((_, res) => res.status(404).json({ error: "Not Found" }));
 
 // 🔹 Iniciar servidor
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () =>
-  console.log(`✅ BioID corriendo en puerto ${PORT} con CORS funcional`)
-);
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
