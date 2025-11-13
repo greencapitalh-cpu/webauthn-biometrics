@@ -1,4 +1,3 @@
-// /middleware/requireAuth.js
 import fetch from "node-fetch";
 
 /**
@@ -33,7 +32,6 @@ export const requireAuth = async (req, res, next) => {
     const user = await response.json();
     req.user = user;
     req.token = token;
-
     next();
   } catch (err) {
     console.error("❌ Error en requireAuth:", err.message);
