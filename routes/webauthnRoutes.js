@@ -1,29 +1,16 @@
 import express from "express";
-import { generateChallenge, publicKeyOptions, publicKeyRequestOptions } from "../utils/webauthn.js";
+import { generateChallenge, publicKeyOptions } from "../utils/webauthn.js";
 import { sha256Hex } from "../utils/crypto.js";
 import { getCredentials } from "../db/mongo.js";
 
 const router = express.Router();
 
-// 🧠 Memoria temporal de desafíos (por usuario)
-const challenges = new Map();
-
 // --- ENROLL START ---
 router.post("/enroll/start", (req, res) => {
-  try {
-    const { userId = "anonymous", userName = "User" } = req.body;
-    const challenge = generateChallenge();
-    challenges.set(userId, challenge);
-
-    // ✅ Tomar host dinámico (funciona desde validate/app también)
-    const host = req.get("origin") || req.get("host") || "https://bioid.udochain.com";
-    const options = publicKeyOptions(challenge, userId, userName, host);
-
-    return res.json(options);
-  } catch (err) {
-    console.error("❌ ENROLL START error:", err);
-    return res.status(500).json({ ok: false, error: err.message });
-  }
+  const { userId = "anonymous", userName = "User" } = req.body;
+  const challenge = generateChallenge();
+  const options = publicKeyOptions(challenge, userId, userName);
+  res.json(options);
 });
 
 // --- ENROLL FINISH ---
@@ -37,41 +24,20 @@ router.post("/enroll/finish", async (req, res) => {
 
     await col.updateOne(
       { userId },
-      {
-        $set: {
-          userId,
-          credentialId: id,
-          hash,
-          challenge: challenges.get(userId) || null,
-          updatedAt: new Date(),
-        },
-      },
+      { $set: { userId, credentialId: id, hash, updatedAt: new Date() } },
       { upsert: true }
     );
 
-    challenges.delete(userId);
-    return res.json({ ok: true, hash });
+    res.json({ ok: true, hash });
   } catch (err) {
-    console.error("❌ ENROLL FINISH error:", err);
-    return res.status(500).json({ ok: false, error: err.message });
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 
 // --- VERIFY START ---
-router.post("/verify/start", async (req, res) => {
-  try {
-    const { userId = "anonymous" } = req.body;
-    const challenge = generateChallenge();
-    challenges.set(userId, challenge);
-
-    const creds = await getCredentials().find({ userId }).toArray();
-    const options = publicKeyRequestOptions(challenge, creds);
-
-    return res.json(options);
-  } catch (err) {
-    console.error("❌ VERIFY START error:", err);
-    return res.status(500).json({ ok: false, error: err.message });
-  }
+router.post("/verify/start", (_, res) => {
+  const challenge = generateChallenge();
+  res.json({ challenge });
 });
 
 // --- VERIFY FINISH ---
@@ -83,11 +49,9 @@ router.post("/verify/finish", async (req, res) => {
     const record = await getCredentials().findOne({ userId, credentialId: id });
     if (!record) return res.status(404).json({ ok: false, error: "Credential not found" });
 
-    // ✅ Retorna hash para Validate
-    return res.json({ ok: true, hash: record.hash });
+    res.json({ ok: true, hash: record.hash });
   } catch (err) {
-    console.error("❌ VERIFY FINISH error:", err);
-    return res.status(500).json({ ok: false, error: err.message });
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 
