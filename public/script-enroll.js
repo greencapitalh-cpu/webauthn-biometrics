@@ -61,14 +61,18 @@ form.addEventListener("submit", async (e) => {
       },
     });
 
+    // 🧩 Guardar credencial localmente para futuras verificaciones
+    const credentialId = cred.id;
+    localStorage.setItem("bioidCredentialId", credentialId);
+    console.log("💾 Stored credentialId:", credentialId);
+
     // ======================================================
-    // 💾 Finalizar registro
+    // 💾 Finalizar registro en backend
     // ======================================================
-    const webauthnId = cred.id;
     const finish = await fetch("/api/bioid/enroll/finish", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, webauthnId, data: formData }),
+      body: JSON.stringify({ userId, webauthnId: credentialId, data: formData }),
     });
 
     const result = await finish.json();
