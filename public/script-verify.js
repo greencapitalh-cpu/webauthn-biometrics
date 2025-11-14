@@ -16,40 +16,45 @@ btn.onclick = async () => {
   try {
     const userId = token;
 
-    // === Obtener challenge del backend ===
+    // === 1️⃣ Verificar si el usuario tiene BioID registrado ===
+    const check = await fetch(`/api/bioid/status/${userId}`);
+    const checkData = await check.json();
+
+    if (!checkData.enrolled) {
+      status.textContent = "⚠️ No biometric record found. Redirecting to enrollment...";
+      setTimeout(() => {
+        window.location.href = `/enroll.html?token=${token}`;
+      }, 1500);
+      return;
+    }
+
+    // === 2️⃣ Obtener challenge del backend ===
     const start = await fetch("/api/bioid/verify/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
     const { challenge } = await start.json();
 
-    // === Generar mismo handle corto que en enroll ===
+    // === 3️⃣ Generar mismo handle que en enroll ===
     async function getUserHandle(id) {
       const msgUint8 = new TextEncoder().encode(id);
       const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-      const shortHash = new Uint8Array(hashBuffer).slice(0, 32);
-      return shortHash;
+      return new Uint8Array(hashBuffer).slice(0, 32);
     }
 
     const handle = await getUserHandle(userId);
-    console.log("✅ Using user handle length:", handle.length, "bytes");
+    console.log("✅ Using handle length:", handle.length, "bytes");
 
-    // === Intentar autenticación con WebAuthn ===
+    // === 4️⃣ Intentar autenticación con WebAuthn ===
     const cred = await navigator.credentials.get({
       publicKey: {
         challenge: new TextEncoder().encode(challenge),
         rpId: "bioid.udochain.com",
         userVerification: "required",
-        allowCredentials: [
-          {
-            id: handle, // Usa el mismo identificador acortado
-            type: "public-key",
-          },
-        ],
       },
     });
 
-    // === Enviar resultado al backend ===
+    // === 5️⃣ Enviar resultado al backend ===
     const finish = await fetch("/api/bioid/verify/finish", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -63,7 +68,6 @@ btn.onclick = async () => {
       const redirect = `https://validate.udochain.com/?bioidHash=${encodeURIComponent(
         result.bioidHash || bioidHashFromUrl
       )}&file=${encodeURIComponent(file)}&hash=${encodeURIComponent(hash)}`;
-
       setTimeout(() => (window.location.href = redirect), 1200);
     } else {
       throw new Error("Verification failed");
