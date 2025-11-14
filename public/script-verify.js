@@ -26,7 +26,8 @@ btn.onclick = async () => {
     if (!checkData.enrolled) {
       status.textContent = "⚠️ No biometric record found. Redirecting to enrollment...";
       setTimeout(() => {
-        window.location.href = `/enroll.html?token=${token}`;
+        // 🔁 FIX: Redirige a /enroll (sin .html)
+        window.location.href = `/enroll?token=${token}`;
       }, 1500);
       return;
     }
