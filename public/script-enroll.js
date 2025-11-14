@@ -1,19 +1,23 @@
 const form = document.getElementById("enrollForm");
 const status = document.getElementById("status");
 
-// Bloqueo simple por token (igual que WAPP)
+// 🔐 Token lock (igual que WAPP)
 const params = new URLSearchParams(window.location.search);
 const token = params.get("token") || localStorage.getItem("token");
 if (!token) window.location.href = "https://app.udochain.com";
 if (token) localStorage.setItem("token", token);
 
+// ======================================================
+// 🚀 Enrollment Flow
+// ======================================================
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   status.textContent = "⏳ Starting enrollment...";
   const formData = Object.fromEntries(new FormData(form).entries());
-  const userId = token; // simplificado: se asocia al token
+  const userId = token; // Asocia el enroll al token actual
 
   try {
+    // --- Iniciar en backend ---
     const start = await fetch("/api/bioid/enroll/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -23,14 +27,30 @@ form.addEventListener("submit", async (e) => {
     const res = await start.json();
     if (!res.ok) throw new Error("Failed to start enrollment");
 
-    // Iniciar biometría WebAuthn
+    // ======================================================
+    // 🧬 Generar user handle (máx. 64 bytes)
+    // ======================================================
+    async function getUserHandle(id) {
+      // Usa SHA-256 para garantizar longitud válida
+      const msgUint8 = new TextEncoder().encode(id);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+      const shortHash = new Uint8Array(hashBuffer).slice(0, 32);
+      return shortHash;
+    }
+
+    const handle = await getUserHandle(userId);
+    console.log("✅ User handle length:", handle.length, "bytes");
+
+    // ======================================================
+    // 🔐 Crear credencial WebAuthn
+    // ======================================================
     const cred = await navigator.credentials.create({
       publicKey: {
         challenge: new Uint8Array(32),
         rp: { name: "UDoChain BioID", id: "bioid.udochain.com" },
         user: {
-          id: new TextEncoder().encode(userId),
-          name: userId,
+          id: handle, // <= ahora siempre ≤ 64 bytes
+          name: userId.slice(0, 64),
           displayName: `${formData.firstName} ${formData.lastName}`,
         },
         pubKeyCredParams: [{ type: "public-key", alg: -7 }],
@@ -43,6 +63,9 @@ form.addEventListener("submit", async (e) => {
       },
     });
 
+    // ======================================================
+    // 💾 Finalizar registro
+    // ======================================================
     const webauthnId = cred.id;
     const finish = await fetch("/api/bioid/enroll/finish", {
       method: "POST",
