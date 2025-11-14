@@ -10,13 +10,16 @@ const bioidHashFromUrl = params.get("bioidHash");
 if (!token) window.location.href = "https://app.udochain.com";
 if (token) localStorage.setItem("token", token);
 
+// 🔖 Recuperar userId persistente (enroll)
+const bioidUserId = localStorage.getItem("bioidUserId") || token;
+
 btn.onclick = async () => {
   status.textContent = "🔐 Authenticating...";
 
   try {
-    const userId = token;
+    const userId = bioidUserId;
 
-    // === 1️⃣ Verificar si el usuario tiene registro biométrico ===
+    // === 1️⃣ Verificar si el usuario ya está enrolado ===
     const check = await fetch(`/api/bioid/status/${userId}`);
     const checkData = await check.json();
 
@@ -82,11 +85,23 @@ btn.onclick = async () => {
     const result = await finish.json();
 
     if (result.ok) {
+      // 🧩 Recuperar archivos previos del validate
+      const pendingFiles = localStorage.getItem("pendingFiles");
+
+      // 🧭 Redirigir con bioidHash y reinyectar archivos
+      const redirectUrl = new URL("https://validate.udochain.com/");
+      redirectUrl.searchParams.set("bioidHash", result.bioidHash || bioidHashFromUrl);
+      redirectUrl.searchParams.set("file", file || "");
+      redirectUrl.searchParams.set("hash", hash || "");
+
+      if (pendingFiles) {
+        localStorage.setItem("pendingFiles", pendingFiles);
+      }
+
       status.textContent = "✅ Verified successfully. Redirecting to Validate...";
-      const redirect = `https://validate.udochain.com/?bioidHash=${encodeURIComponent(
-        result.bioidHash || bioidHashFromUrl
-      )}&file=${encodeURIComponent(file)}&hash=${encodeURIComponent(hash)}`;
-      setTimeout(() => (window.location.href = redirect), 1200);
+      setTimeout(() => {
+        window.location.href = redirectUrl.toString();
+      }, 1200);
     } else {
       throw new Error("Verification failed");
     }
