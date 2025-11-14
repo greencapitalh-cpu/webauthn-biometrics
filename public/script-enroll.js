@@ -86,7 +86,8 @@ form.addEventListener("submit", async (e) => {
     if (result.ok) {
       status.textContent = "✅ Biometric enrolled successfully. Redirecting...";
       setTimeout(() => {
-        window.location.href = `/verify.html?token=${token}&bioidHash=${result.bioidHash}`;
+        // 🔁 FIX: redirige limpio a /verify (sin .html)
+        window.location.href = `/verify?token=${token}&bioidHash=${result.bioidHash}`;
       }, 1200);
     } else {
       throw new Error(result.error || "Enrollment failed");
