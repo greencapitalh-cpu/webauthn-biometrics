@@ -31,11 +31,9 @@ form.addEventListener("submit", async (e) => {
     // 🧬 Generar user handle (máx. 64 bytes)
     // ======================================================
     async function getUserHandle(id) {
-      // Usa SHA-256 para garantizar longitud válida
       const msgUint8 = new TextEncoder().encode(id);
       const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-      const shortHash = new Uint8Array(hashBuffer).slice(0, 32);
-      return shortHash;
+      return new Uint8Array(hashBuffer).slice(0, 32);
     }
 
     const handle = await getUserHandle(userId);
@@ -49,7 +47,7 @@ form.addEventListener("submit", async (e) => {
         challenge: new Uint8Array(32),
         rp: { name: "UDoChain BioID", id: "bioid.udochain.com" },
         user: {
-          id: handle, // <= ahora siempre ≤ 64 bytes
+          id: handle,
           name: userId.slice(0, 64),
           displayName: `${formData.firstName} ${formData.lastName}`,
         },
