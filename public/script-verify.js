@@ -1,33 +1,29 @@
+// ======================================================
+// 🧬 UDoChain BioID — Verification Script (v5 Fixed)
+// ======================================================
+
 const status = document.getElementById("status");
 const btn = document.getElementById("verifyBtn");
 
 const params = new URLSearchParams(window.location.search);
 const token = params.get("token") || localStorage.getItem("token");
-const file = params.get("file");
-const hash = params.get("hash");
-const bioidHashFromUrl = params.get("bioidHash");
+const sessionId = params.get("sessionId"); // 🔹 Necesario para volver a Validate
+const bioidUserId = localStorage.getItem("bioidUserId") || token;
 
 if (!token) window.location.href = "https://app.udochain.com";
 if (token) localStorage.setItem("token", token);
-
-// 🔖 Recuperar userId persistente (enroll)
-const bioidUserId = localStorage.getItem("bioidUserId") || token;
 
 btn.onclick = async () => {
   status.textContent = "🔐 Authenticating...";
 
   try {
-    const userId = bioidUserId;
-
-    // === 1️⃣ Verificar si el usuario ya está enrolado ===
-    const check = await fetch(`/api/bioid/status/${userId}`);
+    // === 1️⃣ Verificar enrolamiento ===
+    const check = await fetch(`/api/bioid/status/${bioidUserId}`);
     const checkData = await check.json();
-
     if (!checkData.enrolled) {
-      status.textContent = "⚠️ No biometric record found. Redirecting to enrollment...";
+      status.textContent = "⚠️ No biometric record found. Redirecting to enroll...";
       setTimeout(() => {
-        // 🔁 FIX: Redirige a /enroll (sin .html)
-        window.location.href = `/enroll?token=${token}`;
+        window.location.href = `/enroll.html?token=${token}`;
       }, 1500);
       return;
     }
@@ -39,10 +35,10 @@ btn.onclick = async () => {
     });
     const { challenge } = await start.json();
 
-    // === 3️⃣ Recuperar credencial registrada ===
+    // === 3️⃣ Recuperar credencial local ===
     const savedId = localStorage.getItem("bioidCredentialId");
     if (!savedId) {
-      status.textContent = "⚠️ No stored key found. Please re-enroll.";
+      status.textContent = "⚠️ No stored credential. Please re-enroll.";
       return;
     }
 
@@ -58,51 +54,35 @@ btn.onclick = async () => {
     }
 
     const allowId = base64ToUint8Array(savedId);
-    console.log("🔑 Using stored credential ID for verification");
 
-    // === 4️⃣ Intentar autenticación con WebAuthn ===
+    // === 4️⃣ Autenticar con WebAuthn ===
     const cred = await navigator.credentials.get({
       publicKey: {
         challenge: new TextEncoder().encode(challenge),
         rpId: "bioid.udochain.com",
         userVerification: "required",
-        allowCredentials: [
-          {
-            id: allowId,
-            type: "public-key",
-          },
-        ],
+        allowCredentials: [{ id: allowId, type: "public-key" }],
         timeout: 60000,
       },
     });
 
-    // === 5️⃣ Enviar resultado al backend ===
+    // === 5️⃣ Finalizar en backend ===
     const finish = await fetch("/api/bioid/verify/finish", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, webauthnId: cred.id }),
+      body: JSON.stringify({ userId: bioidUserId, webauthnId: cred.id }),
     });
-
     const result = await finish.json();
 
     if (result.ok) {
-      // 🧩 Recuperar archivos previos del validate
-      const pendingFiles = localStorage.getItem("pendingFiles");
-
-      // 🧭 Redirigir con bioidHash y reinyectar archivos
+      status.textContent = "✅ Verified! Redirecting to Validate...";
+      // 🔁 Redirigir con sessionId y bioidHash
       const redirectUrl = new URL("https://validate.udochain.com/");
-      redirectUrl.searchParams.set("bioidHash", result.bioidHash || bioidHashFromUrl);
-      redirectUrl.searchParams.set("file", file || "");
-      redirectUrl.searchParams.set("hash", hash || "");
-
-      if (pendingFiles) {
-        localStorage.setItem("pendingFiles", pendingFiles);
-      }
-
-      status.textContent = "✅ Verified successfully. Redirecting to Validate...";
+      redirectUrl.searchParams.set("sessionId", sessionId);
+      redirectUrl.searchParams.set("bioidHash", result.bioidHash);
       setTimeout(() => {
         window.location.href = redirectUrl.toString();
-      }, 1200);
+      }, 1000);
     } else {
       throw new Error("Verification failed");
     }
