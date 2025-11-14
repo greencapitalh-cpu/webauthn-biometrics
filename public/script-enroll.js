@@ -14,7 +14,14 @@ form.addEventListener("submit", async (e) => {
   e.preventDefault();
   status.textContent = "⏳ Starting enrollment...";
   const formData = Object.fromEntries(new FormData(form).entries());
-  const userId = token; // Asocia el enroll al token actual
+
+  // 🔖 Persistir userId local si no existe
+  let bioidUserId = localStorage.getItem("bioidUserId");
+  if (!bioidUserId) {
+    bioidUserId = token; // o podés usar crypto.randomUUID() si querés algo único
+    localStorage.setItem("bioidUserId", bioidUserId);
+  }
+  const userId = bioidUserId;
 
   try {
     // --- Iniciar en backend ---
