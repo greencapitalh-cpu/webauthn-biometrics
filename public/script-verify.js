@@ -16,7 +16,7 @@ btn.onclick = async () => {
   try {
     const userId = token;
 
-    // === 1️⃣ Verificar si el usuario tiene BioID registrado ===
+    // === 1️⃣ Verificar si el usuario tiene registro biométrico ===
     const check = await fetch(`/api/bioid/status/${userId}`);
     const checkData = await check.json();
 
@@ -35,15 +35,26 @@ btn.onclick = async () => {
     });
     const { challenge } = await start.json();
 
-    // === 3️⃣ Generar mismo handle que en enroll ===
-    async function getUserHandle(id) {
-      const msgUint8 = new TextEncoder().encode(id);
-      const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-      return new Uint8Array(hashBuffer).slice(0, 32);
+    // === 3️⃣ Recuperar credencial registrada ===
+    const savedId = localStorage.getItem("bioidCredentialId");
+    if (!savedId) {
+      status.textContent = "⚠️ No stored key found. Please re-enroll.";
+      return;
     }
 
-    const handle = await getUserHandle(userId);
-    console.log("✅ Using handle length:", handle.length, "bytes");
+    function base64ToUint8Array(base64) {
+      const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+      const base64Safe = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+      const rawData = atob(base64Safe);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
+
+    const allowId = base64ToUint8Array(savedId);
+    console.log("🔑 Using stored credential ID for verification");
 
     // === 4️⃣ Intentar autenticación con WebAuthn ===
     const cred = await navigator.credentials.get({
@@ -51,6 +62,13 @@ btn.onclick = async () => {
         challenge: new TextEncoder().encode(challenge),
         rpId: "bioid.udochain.com",
         userVerification: "required",
+        allowCredentials: [
+          {
+            id: allowId,
+            type: "public-key",
+          },
+        ],
+        timeout: 60000,
       },
     });
 
