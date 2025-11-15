@@ -1,5 +1,5 @@
 // ======================================================
-// 🧬 UDoChain BioID — Verification Script (v7 Smooth Redirect)
+// 🧬 UDoChain BioID — Verification Script (v7.1 Smooth Redirect + Validate Sync)
 // ======================================================
 
 const status = document.getElementById("status");
@@ -10,9 +10,15 @@ const token = params.get("token") || localStorage.getItem("token");
 const sessionId = params.get("sessionId"); // 🔹 Necesario para volver a Validate
 const bioidUserId = localStorage.getItem("bioidUserId") || token;
 
+// ======================================================
+// 🧩 Validación de acceso
+// ======================================================
 if (!token) window.location.href = "https://app.udochain.com";
 if (token) localStorage.setItem("token", token);
 
+// ======================================================
+// 🧩 Evento principal de verificación
+// ======================================================
 btn.onclick = async () => {
   status.textContent = "🔐 Authenticating...";
 
@@ -20,6 +26,7 @@ btn.onclick = async () => {
     // === 1️⃣ Verificar enrolamiento ===
     const check = await fetch(`/api/bioid/status/${bioidUserId}`);
     const checkData = await check.json();
+
     if (!checkData.enrolled) {
       status.textContent = "⚠️ No biometric record found. Redirecting to enroll...";
       setTimeout(() => {
@@ -55,7 +62,7 @@ btn.onclick = async () => {
 
     const allowId = base64ToUint8Array(savedId);
 
-    // === 4️⃣ Autenticar con WebAuthn (Compatibilidad universal) ===
+    // === 4️⃣ Autenticar con WebAuthn ===
     let cred = null;
     try {
       cred = await navigator.credentials.get({
@@ -77,7 +84,7 @@ btn.onclick = async () => {
         "⚠️ Biometric verification unavailable. Proceeding with standard verification...";
     }
 
-    // === 5️⃣ Finalizar en backend ===
+    // === 5️⃣ Finalizar verificación en backend ===
     const finish = await fetch("/api/bioid/verify/finish", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -87,6 +94,7 @@ btn.onclick = async () => {
         verifiedWithBiometrics: !!cred,
       }),
     });
+
     const result = await finish.json();
 
     if (result.ok) {
@@ -95,12 +103,12 @@ btn.onclick = async () => {
       // ======================================================
       // 🔁 Redirección optimizada a Validate (sin salto intermedio)
       // ======================================================
-      const redirectUrl = new URL("https://validate.udochain.com/view");
+      const redirectUrl = new URL("https://validate.udochain.com/");
       redirectUrl.searchParams.set("sessionId", sessionId);
       redirectUrl.searchParams.set("bioidHash", result.bioidHash);
       redirectUrl.searchParams.set("step", "final"); // para flujo suave
 
-      // 🧭 Usamos replace() en lugar de href → evita parpadeo y limpia historial
+      // 🧭 replace() → evita parpadeo y limpia historial
       setTimeout(() => {
         window.location.replace(redirectUrl.toString());
       }, 1000);
