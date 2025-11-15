@@ -1,5 +1,5 @@
 // ======================================================
-// 🧬 UDoChain BioID — Verification Script (v5 Fixed)
+// 🧬 UDoChain BioID — Verification Script (v6 Universal)
 // ======================================================
 
 const status = document.getElementById("status");
@@ -55,22 +55,37 @@ btn.onclick = async () => {
 
     const allowId = base64ToUint8Array(savedId);
 
-    // === 4️⃣ Autenticar con WebAuthn ===
-    const cred = await navigator.credentials.get({
-      publicKey: {
-        challenge: new TextEncoder().encode(challenge),
-        rpId: "bioid.udochain.com",
-        userVerification: "required",
-        allowCredentials: [{ id: allowId, type: "public-key" }],
-        timeout: 60000,
-      },
-    });
+    // === 4️⃣ Autenticar con WebAuthn (Compatibilidad universal) ===
+    let cred = null;
+    try {
+      cred = await navigator.credentials.get({
+        publicKey: {
+          challenge: new TextEncoder().encode(challenge),
+          rpId: "bioid.udochain.com",
+          userVerification: "preferred", // ✅ modo universal
+          allowCredentials: [{ id: allowId, type: "public-key" }],
+          timeout: 60000,
+        },
+      });
+
+      if (cred) {
+        status.textContent = "✅ Biometric verification successful!";
+      }
+    } catch (err) {
+      console.warn("⚠️ Biometrics not available — continuing fallback mode:", err);
+      status.textContent =
+        "⚠️ Biometric verification unavailable. Proceeding with standard verification...";
+    }
 
     // === 5️⃣ Finalizar en backend ===
     const finish = await fetch("/api/bioid/verify/finish", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: bioidUserId, webauthnId: cred.id }),
+      body: JSON.stringify({
+        userId: bioidUserId,
+        webauthnId: cred?.id || null,
+        verifiedWithBiometrics: !!cred,
+      }),
     });
     const result = await finish.json();
 
@@ -82,7 +97,7 @@ btn.onclick = async () => {
       redirectUrl.searchParams.set("bioidHash", result.bioidHash);
       setTimeout(() => {
         window.location.href = redirectUrl.toString();
-      }, 1000);
+      }, 1200);
     } else {
       throw new Error("Verification failed");
     }
