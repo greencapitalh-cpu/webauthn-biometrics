@@ -2,22 +2,19 @@ import { sha256Hex } from "../utils/crypto.js";
 import { getUsers } from "../db/mongo.js";
 
 // ======================================================
-// 🔍 Check enrollment status (universal search)
+// 🔍 Check enrollment status (busca por userId, token o hash)
 // ======================================================
 export async function checkStatus(req, res) {
   const { userId } = req.params;
 
-  // 1️⃣ Buscar por userId directo
   let user = await getUsers().findOne({ userId });
 
-  // 2️⃣ Si no encuentra, intentar por token guardado o por hash
   if (!user) {
     user = await getUsers().findOne({
       $or: [{ bioidHash: userId }, { token: userId }],
     });
   }
 
-  // 3️⃣ Resultado
   res.json({ enrolled: !!user, hash: user?.bioidHash || null });
 }
 
@@ -54,7 +51,7 @@ export async function finishEnroll(req, res) {
     {
       $set: {
         userId,
-        token: userId, // ✅ persistir token también (clave para Dashboard)
+        token: userId, // 🔑 se guarda el token como referencia
         bioidHash,
         firstName,
         lastName,
@@ -120,7 +117,7 @@ export async function getUserByHash(req, res) {
 }
 
 // ======================================================
-// ✏️ Update user info (for profile editing)
+// ✏️ Update user info (profile edit desde dashboard)
 // ======================================================
 export async function updateUserData(req, res) {
   try {
@@ -152,4 +149,4 @@ export async function updateUserData(req, res) {
     console.error("❌ updateUserData error:", err);
     res.status(500).json({ ok: false, error: err.message });
   }
-                                            }
+}
