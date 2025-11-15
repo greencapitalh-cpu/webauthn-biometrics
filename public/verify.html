@@ -7,7 +7,6 @@
     <link rel="icon" href="logo-udochain.png" />
     <link rel="stylesheet" href="styles.css" />
     <style>
-      /* 🔹 Ajustes visuales suaves y centrado */
       body {
         background-color: #f9fafb;
         color: #1e293b;
@@ -63,13 +62,11 @@
   </head>
 
   <body>
-    <!-- 🔹 HEADER -->
     <header class="header">
       <img src="logo-udochain.png" alt="UDoChain Logo" class="logo" />
       <h1 class="notranslate" translate="no">UDoChain BioID</h1>
     </header>
 
-    <!-- 🔹 MAIN -->
     <main class="container">
       <h2>Biometric Verification</h2>
       <p class="subtitle">
@@ -81,25 +78,28 @@
       <div id="status" class="status"></div>
     </main>
 
-    <!-- 🔹 FOOTER -->
     <footer class="footer">
       <p class="notranslate" translate="no">You do. We validate.</p>
       <p>© 2025 UDoChain — All rights reserved.</p>
     </footer>
 
-    <!-- 🔹 Script principal -->
     <script>
-      // Mostrar spinner mientras carga la verificación
-      const status = document.getElementById("status");
       const btn = document.getElementById("verifyBtn");
+      const status = document.getElementById("status");
+
       btn.addEventListener("click", () => {
-        btn.disabled = true;
+        // 🔹 No desactivamos el botón antes de llamar al script principal
+        // para evitar retraso del WebAuthn Prompt
         btn.textContent = "Verifying...";
-        status.innerHTML =
-          '<div class="spinner"></div> <span>Starting biometric verification...</span>';
+        setTimeout(() => {
+          // 🔹 Pequeño retardo solo para actualizar UI antes de cargar el script
+          status.innerHTML =
+            '<div class="spinner"></div> <span>Starting biometric verification...</span>';
+        }, 100);
       });
     </script>
 
+    <!-- Script principal -->
     <script src="script-verify.js"></script>
   </body>
 </html>
