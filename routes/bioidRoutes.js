@@ -5,7 +5,8 @@ import {
   startVerify,
   finishVerify,
   checkStatus,
-  getUserByHash, // nuevo controlador
+  getUserByHash,
+  updateUserData, // 🆕 Nuevo controlador
 } from "../controllers/bioidController.js";
 
 const router = express.Router();
@@ -15,8 +16,7 @@ router.post("/enroll/start", startEnroll);
 router.post("/enroll/finish", finishEnroll);
 router.post("/verify/start", startVerify);
 router.post("/verify/finish", finishVerify);
-
-// 🆕 Buscar datos por bioidHash
 router.get("/hash/:hash", getUserByHash);
+router.post("/user/update", updateUserData); // 🆕 Nueva ruta
 
 export default router;
