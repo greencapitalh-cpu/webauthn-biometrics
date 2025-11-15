@@ -47,19 +47,12 @@ app.use("/api/bioid", bioidRoutes);
 app.get("/healthz", (_, res) => res.json({ ok: true }));
 
 // ======================================================
-// 🌐 HTML Routes (so /verify works without .html)
+// 🌐 HTML Routes (add profile support)
 // ======================================================
-app.get("/", (_, res) => {
-  res.sendFile(path.join(publicDir, "enroll.html"));
-});
-
-app.get("/enroll", (_, res) => {
-  res.sendFile(path.join(publicDir, "enroll.html"));
-});
-
-app.get("/verify", (_, res) => {
-  res.sendFile(path.join(publicDir, "verify.html"));
-});
+app.get("/", (_, res) => res.sendFile(path.join(publicDir, "enroll.html")));
+app.get("/enroll", (_, res) => res.sendFile(path.join(publicDir, "enroll.html")));
+app.get("/verify", (_, res) => res.sendFile(path.join(publicDir, "verify.html")));
+app.get("/profile", (_, res) => res.sendFile(path.join(publicDir, "profile.html"))); // 🆕 NUEVO
 
 // ======================================================
 // 🚀 Server start
