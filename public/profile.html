@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UDoChain BioID — Profile</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <img src="logo-udochain.png" alt="UDoChain Logo" class="logo" />
+    <h1>UDoChain BioID</h1>
+  </header>
+
+  <main class="container">
+    <h2 id="title">User Profile</h2>
+    <p class="subtitle" id="subtitle">Loading your information...</p>
+
+    <form id="profileForm" class="form" style="display:none;">
+      <input type="text" name="firstName" placeholder="First Name" required />
+      <input type="text" name="lastName" placeholder="Last Name" required />
+      <select name="documentType" required>
+        <option value="">Select Document Type</option>
+        <option value="dni">National ID</option>
+        <option value="passport">Passport</option>
+        <option value="license">Driver's License</option>
+      </select>
+      <input type="text" name="documentNumber" placeholder="Document Number" required />
+      <input type="text" name="nationality" placeholder="Nationality" required />
+      <input type="text" name="residence" placeholder="Country of Residence" required />
+      <label style="text-align:left; font-size:0.9rem; color:#475569;">Date of Birth</label>
+      <input type="date" name="birthdate" required />
+      <input type="text" name="companyName" placeholder="Company / Institution (optional)" />
+      <button type="submit" class="btn-primary" id="saveBtn">Save Changes</button>
+    </form>
+
+    <div id="status" class="status"></div>
+  </main>
+
+  <footer class="footer">
+    <p class="notranslate">You do. We validate.</p>
+    <p>© 2025 UDoChain — All rights reserved.</p>
+  </footer>
+
+  <script src="script-profile.js"></script>
+</body>
+</html>
