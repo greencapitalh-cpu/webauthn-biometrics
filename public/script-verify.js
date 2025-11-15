@@ -1,5 +1,5 @@
 // ======================================================
-// 🧬 UDoChain BioID — Verification Script (v6 Universal)
+// 🧬 UDoChain BioID — Verification Script (v7 Smooth Redirect)
 // ======================================================
 
 const status = document.getElementById("status");
@@ -91,13 +91,19 @@ btn.onclick = async () => {
 
     if (result.ok) {
       status.textContent = "✅ Verified! Redirecting to Validate...";
-      // 🔁 Redirigir con sessionId y bioidHash
-      const redirectUrl = new URL("https://validate.udochain.com/");
+
+      // ======================================================
+      // 🔁 Redirección optimizada a Validate (sin salto intermedio)
+      // ======================================================
+      const redirectUrl = new URL("https://validate.udochain.com/view");
       redirectUrl.searchParams.set("sessionId", sessionId);
       redirectUrl.searchParams.set("bioidHash", result.bioidHash);
+      redirectUrl.searchParams.set("step", "final"); // para flujo suave
+
+      // 🧭 Usamos replace() en lugar de href → evita parpadeo y limpia historial
       setTimeout(() => {
-        window.location.href = redirectUrl.toString();
-      }, 1200);
+        window.location.replace(redirectUrl.toString());
+      }, 1000);
     } else {
       throw new Error("Verification failed");
     }
