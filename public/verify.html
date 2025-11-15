@@ -39,25 +39,6 @@
         font-size: 0.95rem;
         min-height: 1.4em;
       }
-      .spinner {
-        border: 3px solid #e2e8f0;
-        border-top: 3px solid #184b8c;
-        border-radius: 50%;
-        width: 26px;
-        height: 26px;
-        animation: spin 0.9s linear infinite;
-        display: inline-block;
-        margin-right: 6px;
-        vertical-align: middle;
-      }
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
     </style>
   </head>
 
@@ -73,8 +54,8 @@
         Confirm your identity securely to continue validation.
       </p>
 
+      <!-- 🔹 Sin spinner ni manipulación previa -->
       <button id="verifyBtn" class="btn-primary">Verify Identity</button>
-
       <div id="status" class="status"></div>
     </main>
 
@@ -83,23 +64,6 @@
       <p>© 2025 UDoChain — All rights reserved.</p>
     </footer>
 
-    <script>
-      const btn = document.getElementById("verifyBtn");
-      const status = document.getElementById("status");
-
-      btn.addEventListener("click", () => {
-        // 🔹 No desactivamos el botón antes de llamar al script principal
-        // para evitar retraso del WebAuthn Prompt
-        btn.textContent = "Verifying...";
-        setTimeout(() => {
-          // 🔹 Pequeño retardo solo para actualizar UI antes de cargar el script
-          status.innerHTML =
-            '<div class="spinner"></div> <span>Starting biometric verification...</span>';
-        }, 100);
-      });
-    </script>
-
-    <!-- Script principal -->
     <script src="script-verify.js"></script>
   </body>
 </html>
