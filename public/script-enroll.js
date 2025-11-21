@@ -4,8 +4,10 @@ const status = document.getElementById("status");
 // 🔐 Token lock (igual que WAPP)
 const params = new URLSearchParams(window.location.search);
 const token = params.get("token") || localStorage.getItem("token");
+const emailFromUrl = params.get("email");
 if (!token) window.location.href = "https://app.udochain.com";
 if (token) localStorage.setItem("token", token);
+if (emailFromUrl) localStorage.setItem("userEmail", emailFromUrl);
 
 // ======================================================
 // 🚀 Enrollment Flow
@@ -18,10 +20,11 @@ form.addEventListener("submit", async (e) => {
   // 🔖 Persistir userId local si no existe
   let bioidUserId = localStorage.getItem("bioidUserId");
   if (!bioidUserId) {
-    bioidUserId = token; // o podés usar crypto.randomUUID() si querés algo único
+    bioidUserId = token;
     localStorage.setItem("bioidUserId", bioidUserId);
   }
   const userId = bioidUserId;
+  const userEmail = localStorage.getItem("userEmail") || null;
 
   try {
     // --- Iniciar en backend ---
@@ -34,9 +37,6 @@ form.addEventListener("submit", async (e) => {
     const res = await start.json();
     if (!res.ok) throw new Error("Failed to start enrollment");
 
-    // ======================================================
-    // 🧬 Generar user handle (máx. 64 bytes)
-    // ======================================================
     async function getUserHandle(id) {
       const msgUint8 = new TextEncoder().encode(id);
       const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
@@ -68,25 +68,27 @@ form.addEventListener("submit", async (e) => {
       },
     });
 
-    // 🧩 Guardar credencial localmente para futuras verificaciones
     const credentialId = cred.id;
     localStorage.setItem("bioidCredentialId", credentialId);
-    console.log("💾 Stored credentialId:", credentialId);
 
     // ======================================================
-    // 💾 Finalizar registro en backend
+    // 💾 Finalizar registro en backend (ahora con email)
     // ======================================================
     const finish = await fetch("/api/bioid/enroll/finish", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, webauthnId: credentialId, data: formData }),
+      body: JSON.stringify({
+        userId,
+        webauthnId: credentialId,
+        data: formData,
+        userEmail, // ✅ enviado al backend
+      }),
     });
 
     const result = await finish.json();
     if (result.ok) {
       status.textContent = "✅ Biometric enrolled successfully. Redirecting...";
       setTimeout(() => {
-        // 🔁 FIX: redirige limpio a /verify (sin .html)
         window.location.href = `/verify?token=${token}&bioidHash=${result.bioidHash}`;
       }, 1200);
     } else {
