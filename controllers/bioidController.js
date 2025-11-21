@@ -29,10 +29,10 @@ export async function startEnroll(req, res) {
 }
 
 // ======================================================
-// 🧩 Finish enrollment
+// 🧩 Finish enrollment (actualizado con userEmail)
 // ======================================================
 export async function finishEnroll(req, res) {
-  const { userId, webauthnId, data } = req.body;
+  const { userId, webauthnId, data, userEmail } = req.body;
   const bioidHash = sha256Hex(webauthnId);
 
   const {
@@ -46,12 +46,15 @@ export async function finishEnroll(req, res) {
     companyName,
   } = data;
 
+  // 🔹 Si no viene email explícito, intentar inferirlo
+  const email = userEmail || (userId.includes("@") ? userId : null);
+
   await getUsers().updateOne(
     { userId },
     {
       $set: {
         userId,
-        token: userId, // 🔑 se guarda el token como referencia
+        token: userId, // 🔑 usado como referencia cruzada con Validate/Wapp
         bioidHash,
         firstName,
         lastName,
@@ -61,6 +64,7 @@ export async function finishEnroll(req, res) {
         residence,
         birthdate,
         companyName: companyName || "",
+        userEmail: email, // ✅ NUEVO CAMPO
         createdAt: new Date(),
       },
     },
@@ -89,7 +93,7 @@ export async function finishVerify(req, res) {
 }
 
 // ======================================================
-// 📄 Get user info by hash
+// 📄 Get user info by hash (incluye userEmail)
 // ======================================================
 export async function getUserByHash(req, res) {
   try {
@@ -110,6 +114,7 @@ export async function getUserByHash(req, res) {
       birthdate: user.birthdate || "",
       nationality: user.nationality || "",
       residence: user.residence || "",
+      userEmail: user.userEmail || "", // ✅ NUEVO CAMPO
     });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
@@ -136,6 +141,7 @@ export async function updateUserData(req, res) {
           residence: data.residence,
           birthdate: data.birthdate,
           companyName: data.companyName || "",
+          userEmail: data.userEmail || "", // ✅ sincroniza también si se edita
           updatedAt: new Date(),
         },
       }
