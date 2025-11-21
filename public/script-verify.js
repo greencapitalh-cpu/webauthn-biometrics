@@ -1,5 +1,5 @@
 // ======================================================
-// 🧬 UDoChain BioID — Verification Script (v7.1 Smooth Redirect + Validate Sync)
+// 🧬 UDoChain BioID — Verification Script (v7.2 + Email Support)
 // ======================================================
 
 const status = document.getElementById("status");
@@ -7,7 +7,7 @@ const btn = document.getElementById("verifyBtn");
 
 const params = new URLSearchParams(window.location.search);
 const token = params.get("token") || localStorage.getItem("token");
-const sessionId = params.get("sessionId"); // 🔹 Necesario para volver a Validate
+const sessionId = params.get("sessionId");
 const bioidUserId = localStorage.getItem("bioidUserId") || token;
 
 // ======================================================
@@ -29,8 +29,9 @@ btn.onclick = async () => {
 
     if (!checkData.enrolled) {
       status.textContent = "⚠️ No biometric record found. Redirecting to enroll...";
+      const email = localStorage.getItem("userEmail") || "";
       setTimeout(() => {
-        window.location.href = `/enroll.html?token=${token}`;
+        window.location.href = `/enroll.html?token=${token}&email=${encodeURIComponent(email)}`;
       }, 1500);
       return;
     }
@@ -69,7 +70,7 @@ btn.onclick = async () => {
         publicKey: {
           challenge: new TextEncoder().encode(challenge),
           rpId: "bioid.udochain.com",
-          userVerification: "preferred", // ✅ modo universal
+          userVerification: "preferred",
           allowCredentials: [{ id: allowId, type: "public-key" }],
           timeout: 60000,
         },
@@ -99,16 +100,10 @@ btn.onclick = async () => {
 
     if (result.ok) {
       status.textContent = "✅ Verified! Redirecting to Validate...";
-
-      // ======================================================
-      // 🔁 Redirección optimizada a Validate (sin salto intermedio)
-      // ======================================================
       const redirectUrl = new URL("https://validate.udochain.com/");
       redirectUrl.searchParams.set("sessionId", sessionId);
       redirectUrl.searchParams.set("bioidHash", result.bioidHash);
-      redirectUrl.searchParams.set("step", "final"); // para flujo suave
-
-      // 🧭 replace() → evita parpadeo y limpia historial
+      redirectUrl.searchParams.set("step", "final");
       setTimeout(() => {
         window.location.replace(redirectUrl.toString());
       }, 1000);
