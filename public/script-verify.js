@@ -1,5 +1,5 @@
 // ======================================================
-// 🧬 UDoChain BioID — Verification Script (v7.2 + Email Support)
+// 🧬 UDoChain BioID — Verification Script (v7.3 Final Flow + Email + Validate Integration)
 // ======================================================
 
 const status = document.getElementById("status");
@@ -8,6 +8,7 @@ const btn = document.getElementById("verifyBtn");
 const params = new URLSearchParams(window.location.search);
 const token = params.get("token") || localStorage.getItem("token");
 const sessionId = params.get("sessionId");
+const email = params.get("email") || localStorage.getItem("userEmail");
 const bioidUserId = localStorage.getItem("bioidUserId") || token;
 
 // ======================================================
@@ -15,6 +16,7 @@ const bioidUserId = localStorage.getItem("bioidUserId") || token;
 // ======================================================
 if (!token) window.location.href = "https://app.udochain.com";
 if (token) localStorage.setItem("token", token);
+if (email) localStorage.setItem("userEmail", email);
 
 // ======================================================
 // 🧩 Evento principal de verificación
@@ -29,9 +31,9 @@ btn.onclick = async () => {
 
     if (!checkData.enrolled) {
       status.textContent = "⚠️ No biometric record found. Redirecting to enroll...";
-      const email = localStorage.getItem("userEmail") || "";
+      const emailStored = localStorage.getItem("userEmail") || "";
       setTimeout(() => {
-        window.location.href = `/enroll.html?token=${token}&email=${encodeURIComponent(email)}`;
+        window.location.href = `/enroll.html?token=${token}&email=${encodeURIComponent(emailStored)}`;
       }, 1500);
       return;
     }
@@ -100,10 +102,15 @@ btn.onclick = async () => {
 
     if (result.ok) {
       status.textContent = "✅ Verified! Redirecting to Validate...";
-      const redirectUrl = new URL("https://validate.udochain.com/");
+
+      // ✅ Redirección corregida (ahora incluye token, email y validate.html)
+      const redirectUrl = new URL("https://validate.udochain.com/validate.html");
       redirectUrl.searchParams.set("sessionId", sessionId);
       redirectUrl.searchParams.set("bioidHash", result.bioidHash);
+      redirectUrl.searchParams.set("token", token);
+      if (email) redirectUrl.searchParams.set("email", email);
       redirectUrl.searchParams.set("step", "final");
+
       setTimeout(() => {
         window.location.replace(redirectUrl.toString());
       }, 1000);
