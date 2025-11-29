@@ -23,7 +23,7 @@ let bioidHash = null;
 // 🚀 Initialize profile view
 // ======================================================
 async function initProfile() {
-  status.textContent = "⏳ Checking your BioID enrollment...";
+  status.textContent = " Checking your BioID enrollment...";
   try {
     const check = await fetch(`/api/bioid/status/${userId}`);
     const checkData = await check.json();
@@ -44,10 +44,10 @@ async function initProfile() {
         for (const key in data) {
           if (form.elements[key]) form.elements[key].value = data[key];
         }
-        saveBtn.textContent = "💾 Save Changes";
+        saveBtn.textContent = " Save Changes";
       }
     } else {
-      saveBtn.textContent = "🧬 Enroll Now";
+      saveBtn.textContent = " Enroll Now";
     }
 
     status.textContent = "";
@@ -63,7 +63,7 @@ async function initProfile() {
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(form).entries());
-  status.textContent = "⏳ Saving your information...";
+  status.textContent = " Saving your information...";
 
   try {
     if (enrolled) {
@@ -75,7 +75,7 @@ form.addEventListener("submit", async (e) => {
       });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || "Update failed");
-      status.textContent = "✅ Profile updated successfully!";
+      status.textContent = " Profile updated successfully!";
     } else {
       // 🔹 Start enrollment
       const start = await fetch("/api/bioid/enroll/start", {
@@ -116,7 +116,7 @@ form.addEventListener("submit", async (e) => {
       if (!result.ok) throw new Error(result.error || "Enrollment failed");
 
       bioidHash = result.bioidHash;
-      status.textContent = "✅ Enrolled successfully!";
+      status.textContent = " Enrolled successfully!";
     }
 
     // 🔁 Redirect based on origin
