@@ -22,7 +22,7 @@ if (email) localStorage.setItem("userEmail", email);
 // 🧩 Evento principal de verificación
 // ======================================================
 btn.onclick = async () => {
-  status.textContent = "🔐 Authenticating...";
+  status.textContent = "Authenticating...";
 
   try {
     // === 1️⃣ Verificar enrolamiento ===
@@ -79,7 +79,7 @@ btn.onclick = async () => {
       });
 
       if (cred) {
-        status.textContent = "✅ Biometric verification successful!";
+        status.textContent = "Biometric verification successful!";
       }
     } catch (err) {
       console.warn("⚠️ Biometrics not available — continuing fallback mode:", err);
@@ -101,7 +101,7 @@ btn.onclick = async () => {
     const result = await finish.json();
 
     if (result.ok) {
-      status.textContent = "✅ Verified! Redirecting to Validate...";
+      status.textContent = " Verified! Redirecting to Validate...";
 
       // ✅ Redirección corregida (ahora incluye token, email y validate.html)
       const redirectUrl = new URL("https://validate.udochain.com/validate.html");
