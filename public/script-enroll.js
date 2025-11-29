@@ -14,7 +14,7 @@ if (emailFromUrl) localStorage.setItem("userEmail", emailFromUrl);
 // ======================================================
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  status.textContent = "⏳ Starting enrollment...";
+  status.textContent = "Starting enrollment...";
   const formData = Object.fromEntries(new FormData(form).entries());
 
   // 🔖 Persistir userId local si no existe
@@ -44,7 +44,7 @@ form.addEventListener("submit", async (e) => {
     }
 
     const handle = await getUserHandle(userId);
-    console.log("✅ User handle length:", handle.length, "bytes");
+    console.log("User handle length:", handle.length, "bytes");
 
     // ======================================================
     // 🔐 Crear credencial WebAuthn
@@ -87,7 +87,7 @@ form.addEventListener("submit", async (e) => {
 
     const result = await finish.json();
     if (result.ok) {
-      status.textContent = "✅ Biometric enrolled successfully. Redirecting...";
+      status.textContent = " Biometric enrolled successfully. Redirecting...";
       setTimeout(() => {
         window.location.href = `/verify?token=${token}&bioidHash=${result.bioidHash}`;
       }, 1200);
