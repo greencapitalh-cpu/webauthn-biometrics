@@ -13,30 +13,31 @@
   </header>
 
   <main class="container">
-    <h2>Biometric Enrollment</h2>
-    <p class="subtitle">Complete your identity registration to enable secure signing and validation.</p>
+    <h2>Edit Profile</h2>
+    <p class="subtitle">You can update your personal information below.</p>
 
     <form id="enrollForm" class="form">
       <input type="text" name="firstName" placeholder="First Name" required />
       <input type="text" name="lastName" placeholder="Last Name" required />
+
       <select name="documentType" required>
         <option value="">Select Document Type</option>
         <option value="dni">National ID</option>
         <option value="passport">Passport</option>
         <option value="license">Driver's License</option>
       </select>
+
       <input type="text" name="documentNumber" placeholder="Document Number" required />
       <input type="text" name="nationality" placeholder="Nationality" required />
       <input type="text" name="residence" placeholder="Country of Residence" required />
 
-      <!-- 🔹 Etiqueta visible -->
       <label style="text-align: left; font-size: 0.9rem; color: #475569;">Date of Birth</label>
       <input type="date" name="birthdate" required />
 
-      <!-- 🔹 Campo opcional -->
       <input type="text" name="companyName" placeholder="Company / Institution Name (optional)" />
 
-      <button type="submit" class="btn-primary">Register & Enroll Biometric</button>
+      <!-- 🔹 Botón limpio sin emoji -->
+      <button type="submit" class="btn-primary">Save Changes</button>
     </form>
 
     <div id="status" class="status"></div>
